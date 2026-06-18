@@ -1,13 +1,21 @@
-# iii on Railway
+<p align="center">
+  <img src="https://iii.dev/favicon.svg" alt="iii" height="72" />
+</p>
 
-A starter template for running the [iii](https://iii.dev) engine on
-[Railway](https://railway.com). It deploys a clean engine plus the worker daemon
-and nothing else. You add workers by editing `config.yaml`.
+<h1 align="center">iii</h1>
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/TEMPLATE_ID)
+<p align="center">
+  Deploy the <a href="https://iii.dev">iii</a> engine on <a href="https://railway.com">Railway</a>.
+</p>
 
-> Replace `TEMPLATE_ID` with the id of the template you publish from the Railway
-> dashboard (see [Publish a shareable template](#publish-a-shareable-template)).
+<p align="center">
+  <a href="https://railway.com/deploy/8CuY4-?referralCode=lz2OFn"><img src="https://railway.com/button.svg" alt="Deploy on Railway" /></a>
+</p>
+
+A starter template for running the iii engine on Railway. It deploys a clean
+engine and the worker daemon. You add workers either by declaring them in
+`config.yaml` or by running them as their own Railway service that connects to
+the engine.
 
 ## What this deploys
 
@@ -19,8 +27,8 @@ One service built from the `Dockerfile` in this repo:
   `iii-stream` (port 3112), `iii-state`, `iii-queue`, `iii-cron`, `iii-pubsub`,
   `configuration`, and `iii-observability`
 
-No add-on workers are included. The image is the same for everyone; your
-`config.yaml` is the only part that is specific to your deployment.
+The image is the same for everyone; your `config.yaml` is the only part specific
+to your deployment. Run more workers in this service or as separate ones.
 
 ## Files
 
@@ -66,8 +74,39 @@ Supported assistants include Claude Code, OpenAI Codex, OpenCode, and Cursor.
 
 ## Add workers
 
-Every capability in iii is a worker. To add one, declare it in `config.yaml` and
-redeploy:
+Every capability in iii is a worker. There are two ways to add one.
+
+### As a separate service
+
+Run the worker as its own Railway service so it scales on its own. It connects to
+the engine over private networking, which is IPv6 only, so point it at the engine
+internal address on the worker-manager port `49134`:
+
+```bash
+III_URL=ws://engine.railway.internal:49134
+```
+
+where `engine` is the engine service name. The worker registers its functions and
+HTTP triggers with the engine; requests still arrive through the engine public
+domain on port 3111. Workers in any language connect this way (Node, Python, Rust
+SDKs). A minimal Node worker:
+
+```js
+import { registerWorker } from "iii-sdk";
+
+const worker = registerWorker(process.env.III_URL);
+worker.registerFunction("orders::create", async (input) => ({ ok: true, item: input?.item }));
+worker.registerTrigger({
+  type: "http",
+  function_id: "orders::create",
+  config: { api_path: "/orders", http_method: "POST" },
+});
+```
+
+### Inside the engine
+
+For a registry worker that runs as a child process of the engine, declare it in
+`config.yaml` and redeploy:
 
 ```yaml
   - name: database
@@ -81,9 +120,8 @@ redeploy:
 ```
 
 If a declared worker is not present in the image, the engine fetches it from the
-registry on boot and runs it as a child process. To pin a version and skip the
-cold-start download, install it at build time by adding a line to the
-`Dockerfile`:
+registry on boot. To pin a version and skip the cold-start download, install it at
+build time by adding a line to the `Dockerfile`:
 
 ```dockerfile
 RUN iii worker add database
@@ -117,22 +155,23 @@ Store credentials as Railway
           secret_access_key: ${R2_SECRET_ACCESS_KEY}
 ```
 
-## Multiple services
-
-To run a worker as its own Railway service (for independent scaling), give it a
-separate service that connects to the engine over private networking. Railway
-private networking is IPv6 only, so connect to the engine at
-`engine.railway.internal` on port `49134`, where `engine` is the engine service
-name.
-
 ## Verify the deployment
 
-After the service is live, call a function over the public domain:
+The engine exposes only the HTTP routes your workers register through `http`
+triggers. With no workers added there are no function routes yet, but you can
+confirm the engine is live: any request returns the iii JSON error envelope.
 
 ```bash
-curl -X POST "https://<your-domain>/api/v1/functions/<function-id>" \
+curl -i "https://<your-domain>/"
+```
+
+Once a worker registers an HTTP trigger (for example `POST /orders`), call its
+path:
+
+```bash
+curl -X POST "https://<your-domain>/orders" \
   -H "Content-Type: application/json" \
-  --data-binary '{}'
+  --data-binary '{"item":"widget"}'
 ```
 
 ## Publish a shareable template

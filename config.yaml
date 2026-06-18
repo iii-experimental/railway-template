@@ -1,9 +1,9 @@
 # iii engine config for Railway.
 #
-# Every entry below is a worker. iii has no built-in services to distinguish
-# from add-ons: you run a worker by declaring it here. If a declared worker is
-# not present in the image, the engine fetches it from the registry on boot and
-# runs it as a child process.
+# Every entry below is a worker. You run a worker by declaring it here. If a
+# declared worker is not present in the image, the engine fetches it from the
+# registry on boot and runs it as a child process. Workers can also run as their
+# own service and connect to the engine over the network (see README).
 #
 # Railway notes:
 #   - Private networking is IPv6 only, so listeners bind to [::].
@@ -88,7 +88,9 @@ workers:
       enabled: true
       service_name: iii
       exporter: memory
+      metrics_enabled: true
       metrics_exporter: memory
+      logs_enabled: true
       logs_exporter: memory
 
   # ── Add workers here ───────────────────────────────────────────────────────
