@@ -1,0 +1,110 @@
+# iii engine config for Railway.
+#
+# Every entry below is a worker. iii has no built-in services to distinguish
+# from add-ons: you run a worker by declaring it here. If a declared worker is
+# not present in the image, the engine fetches it from the registry on boot and
+# runs it as a child process.
+#
+# Railway notes:
+#   - Private networking is IPv6 only, so listeners bind to [::].
+#   - Persistent state is written under /data (mount a Railway volume there).
+#   - Expose the public domain on port 3111 (the iii-http listener).
+
+workers:
+  # The first worker-manager entry is the engine WebSocket port that worker
+  # services connect to over Railway private networking.
+  - name: iii-worker-manager
+    config:
+      host: "[::]"
+      port: 49134
+
+  - name: iii-http
+    config:
+      host: "[::]"
+      port: 3111
+      default_timeout: 30000
+      concurrency_request_limit: 1024
+      cors:
+        allowed_origins:
+          - "*"
+        allowed_methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+
+  - name: iii-stream
+    config:
+      host: "[::]"
+      port: 3112
+      adapter:
+        name: kv
+        config:
+          store_method: file_based
+          file_path: /data/stream_store
+
+  - name: iii-state
+    config:
+      adapter:
+        name: kv
+        config:
+          store_method: file_based
+          file_path: /data/state_store.db
+
+  - name: iii-queue
+    config:
+      queue_configs:
+        fulfillment:
+          type: standard
+          max_retries: 3
+          concurrency: 5
+      adapter:
+        name: builtin
+        config:
+          store_method: file_based
+          file_path: /data/queue_store
+
+  - name: iii-cron
+    config:
+      adapter:
+        name: kv
+
+  - name: iii-pubsub
+    config:
+      adapter:
+        name: local
+
+  - name: configuration
+    config:
+      adapter:
+        name: fs
+        config:
+          directory: /data/configuration
+      ttl_seconds: 0
+
+  - name: iii-observability
+    config:
+      enabled: true
+      service_name: iii
+      exporter: memory
+      metrics_exporter: memory
+      logs_exporter: memory
+
+  # ── Add workers here ───────────────────────────────────────────────────────
+  # Declare any worker from the registry with a `- name:` entry and its config.
+  # The example below adds a SQLite database on the /data volume. Uncomment it,
+  # or replace it with any other worker.
+  #
+  # - name: database
+  #   config:
+  #     databases:
+  #       primary:
+  #         url: sqlite:/data/iii.db
+  #         pool:
+  #           max: 5
+  #           idle_timeout_ms: 30000
+  #
+  # Workers that boot a micro-VM (iii-sandbox, the bundle harness, any OCI image
+  # worker) use libkrun and need /dev/kvm, which Railway containers do not
+  # expose. Workers that run as a process work here.
