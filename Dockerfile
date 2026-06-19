@@ -7,9 +7,10 @@
 FROM debian:bookworm-slim
 
 # curl, ca-certificates, and jq are used by the installer. libssl3 and libcap2
-# are engine runtime dependencies. No worker-specific packages are installed.
+# are iii engine runtime dependencies; libcap-ng0 provides libcap-ng.so.0, which
+# the iii-worker daemon needs to launch binary registry workers (e.g. database).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates jq libssl3 libcap2 \
+    && apt-get install -y --no-install-recommends curl ca-certificates jq libssl3 libcap2 libcap-ng0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Installs iii (engine) and iii-worker (the daemon that runs add-on workers).
@@ -19,7 +20,7 @@ ENV PATH="/root/.local/bin:${PATH}"
 WORKDIR /app
 COPY config.yaml /app/config.yaml
 
-# 49134 engine WS, 3111 HTTP, 3112 stream. Add 9464 to scrape Prometheus metrics.
+# 49134 engine WS (worker connections), 3111 HTTP, 3112 stream.
 EXPOSE 49134 3111 3112
 
 CMD ["iii", "--config", "/app/config.yaml"]
