@@ -265,8 +265,6 @@ URL, use the Railway dashboard
 3. In the Template Composer, confirm the `/data` volume and any variables you
    want to prompt for, then publish.
 4. You get a share URL of the form `https://railway.com/template/<id>`.
-5. If you want deploy referral credit for your template, apply to the
-   [Railway Open Source program](https://railway.com/open-source).
 
 ## License
 
