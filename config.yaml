@@ -69,6 +69,9 @@ workers:
     config:
       adapter:
         name: kv
+        config:
+          store_method: file_based
+          file_path: /data/cron_store
 
   - name: iii-pubsub
     config:
@@ -107,6 +110,8 @@ workers:
   #           max: 5
   #           idle_timeout_ms: 30000
   #
-  # Workers that boot a micro-VM (iii-sandbox, the bundle harness, any OCI image
-  # worker) use libkrun and need /dev/kvm, which Railway containers do not
-  # expose. Workers that run as a process work here.
+  # Any registry worker that resolves to `deploy: binary` runs as a plain
+  # process on Railway. Workers that need to boot a libkrun micro-VM
+  # (iii-sandbox and the bundle harness) still register their functions on boot,
+  # but per-invocation guest boot requires /dev/kvm, which Railway containers do
+  # not expose. Check a worker's iii.worker.yaml `deploy` field before adding.
