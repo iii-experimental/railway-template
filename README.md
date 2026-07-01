@@ -24,9 +24,10 @@ The main Railway service is built from the top-level `Dockerfile`:
 
 - the iii engine
 - the `iii-worker` daemon, so the engine can run any binary worker from the registry
-- the workers declared in `config.yaml`: `iii-http` (REST, port 3111),
-  `iii-stream` (port 3112), `iii-state`, `iii-queue`, `iii-cron`, `iii-pubsub`,
-  `configuration`, and `iii-observability`
+- the workers declared in `config.yaml`: `iii-worker-manager` (worker WebSocket,
+  port 49134), `iii-http` (REST, port 3111), `iii-stream` (port 3112),
+  `iii-state`, `iii-queue`, `iii-cron`, `iii-pubsub`, `configuration`, and
+  `iii-observability`
 
 Optionally, `hello-worker/` deploys as a second Railway service and registers
 `POST /hello` so [Verify the deployment](#verify-the-deployment) returns a real
@@ -233,7 +234,7 @@ Any request to the engine's public URL returns iii's JSON envelope, so a bare
 curl -i "https://<your-engine-domain>/"
 ```
 
-```
+```http
 HTTP/1.1 404 Not Found
 content-type: application/json
 
