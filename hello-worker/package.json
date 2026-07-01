@@ -1,0 +1,12 @@
+{
+  "name": "hello-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "iii-sdk": "^0.20.0"
+  }
+}
